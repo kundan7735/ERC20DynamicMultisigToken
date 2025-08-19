@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {ERC20TokenDynamicMultisig} from "../src/ERC20TokenDynamicMultisig.sol";
+import {ERC20Token} from "../src/ERC20Token.sol";
 
-contract ERC20TokenDynamicMultisigTest is Test {
-    ERC20TokenDynamicMultisig public token;
+contract ERC20TokenTest is Test {
+    ERC20Token public token;
     
     // Test accounts
     address public deployer;
@@ -16,7 +16,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
     address public recipient;
     
     // Events to test
-    event TransactionSubmitted(uint256 indexed txId, ERC20TokenDynamicMultisig.TransactionType txType, address indexed submitter);
+    event TransactionSubmitted(uint256 indexed txId, ERC20Token.TransactionType txType, address indexed submitter);
     event TransactionConfirmed(uint256 indexed txId, address indexed signer);
     event TransactionRevoked(uint256 indexed txId, address indexed signer);
     event TransactionExecuted(uint256 indexed txId);
@@ -43,7 +43,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
         signers[2] = signer3;
         
         // Deploy token contract with 2-of-3 multisig
-        token = new ERC20TokenDynamicMultisig(
+        token = new ERC20Token(
             "Test Dynamic Multisig Token",
             "TDMT",
             signers,
@@ -83,8 +83,8 @@ contract ERC20TokenDynamicMultisigTest is Test {
     function test_Constructor_RevertEmptySigners() public {
         address[] memory emptySigners = new address[](0);
         
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
-        new ERC20TokenDynamicMultisig("Token", "TKN", emptySigners, 1);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
+        new ERC20Token("Token", "TKN", emptySigners, 1);
     }
     
     function test_Constructor_RevertZeroAddress() public {
@@ -92,8 +92,8 @@ contract ERC20TokenDynamicMultisigTest is Test {
         signers[0] = signer1;
         signers[1] = address(0);
         
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
-        new ERC20TokenDynamicMultisig("Token", "TKN", signers, 1);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
+        new ERC20Token("Token", "TKN", signers, 1);
     }
     
     function test_Constructor_RevertDuplicateSigners() public {
@@ -101,8 +101,8 @@ contract ERC20TokenDynamicMultisigTest is Test {
         signers[0] = signer1;
         signers[1] = signer1;
         
-        vm.expectRevert(ERC20TokenDynamicMultisig.DuplicateSigner.selector);
-        new ERC20TokenDynamicMultisig("Token", "TKN", signers, 1);
+        vm.expectRevert(ERC20Token.DuplicateSigner.selector);
+        new ERC20Token("Token", "TKN", signers, 1);
     }
     
     function test_Constructor_RevertInvalidThreshold() public {
@@ -110,11 +110,11 @@ contract ERC20TokenDynamicMultisigTest is Test {
         signers[0] = signer1;
         signers[1] = signer2;
         
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidThreshold.selector);
-        new ERC20TokenDynamicMultisig("Token", "TKN", signers, 0);
+        vm.expectRevert(ERC20Token.InvalidThreshold.selector);
+        new ERC20Token("Token", "TKN", signers, 0);
         
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidThreshold.selector);
-        new ERC20TokenDynamicMultisig("Token", "TKN", signers, 3);
+        vm.expectRevert(ERC20Token.InvalidThreshold.selector);
+        new ERC20Token("Token", "TKN", signers, 3);
     }
     
     // ============ Mint Tests ============
@@ -122,14 +122,14 @@ contract ERC20TokenDynamicMultisigTest is Test {
     function test_SubmitMint() public {
         vm.prank(signer1);
         vm.expectEmit(true, true, false, true);
-        emit TransactionSubmitted(0, ERC20TokenDynamicMultisig.TransactionType.MINT, signer1);
+        emit TransactionSubmitted(0, ERC20Token.TransactionType.MINT, signer1);
         uint256 txId = token.submitMint(recipient, 1000 * 10**18);
         
         assertEq(txId, 0);
         assertEq(token.getTransactionCount(), 1);
         
         (
-            ERC20TokenDynamicMultisig.TransactionType txType,
+            ERC20Token.TransactionType txType,
             address target,
             uint256 amount,
             ,  // string memory data1 - unused
@@ -138,7 +138,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
             uint256 confirmations
         ) = token.getTransaction(txId);
         
-        assertEq(uint(txType), uint(ERC20TokenDynamicMultisig.TransactionType.MINT));
+        assertEq(uint(txType), uint(ERC20Token.TransactionType.MINT));
         assertEq(target, recipient);
         assertEq(amount, 1000 * 10**18);
         assertEq(executed, false);
@@ -176,7 +176,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     function test_MintRevertZeroAddress() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidRecipient.selector);
+        vm.expectRevert(ERC20Token.InvalidRecipient.selector);
         token.submitMint(address(0), 1000 * 10**18);
     }
     
@@ -189,14 +189,14 @@ contract ERC20TokenDynamicMultisigTest is Test {
         
         vm.prank(signer1);
         vm.expectEmit(true, true, false, true);
-        emit TransactionSubmitted(0, ERC20TokenDynamicMultisig.TransactionType.BURN, signer1);
+        emit TransactionSubmitted(0, ERC20Token.TransactionType.BURN, signer1);
         uint256 txId = token.submitBurn(recipient, 1000 * 10**18);
         
         assertEq(txId, 0);
         assertEq(token.getTransactionCount(), 1);
         
         (
-            ERC20TokenDynamicMultisig.TransactionType txType,
+            ERC20Token.TransactionType txType,
             address target,
             uint256 amount,
             ,  // string memory data1 - unused
@@ -205,7 +205,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
             uint256 confirmations
         ) = token.getTransaction(txId);
         
-        assertEq(uint(txType), uint(ERC20TokenDynamicMultisig.TransactionType.BURN));
+        assertEq(uint(txType), uint(ERC20Token.TransactionType.BURN));
         assertEq(target, recipient);
         assertEq(amount, 1000 * 10**18);
         assertEq(executed, false);
@@ -243,13 +243,13 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     function test_BurnRevertZeroAddress() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidRecipient.selector);
+        vm.expectRevert(ERC20Token.InvalidRecipient.selector);
         token.submitBurn(address(0), 1000 * 10**18);
     }
     
     function test_BurnRevertZeroAmount() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidBurnAmount.selector);
+        vm.expectRevert(ERC20Token.InvalidBurnAmount.selector);
         token.submitBurn(recipient, 0);
     }
     
@@ -258,7 +258,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
         assertEq(token.balanceOf(recipient), 0);
         
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidBurnAmount.selector);
+        vm.expectRevert(ERC20Token.InvalidBurnAmount.selector);
         token.submitBurn(recipient, 1000 * 10**18);
     }
     
@@ -349,19 +349,19 @@ contract ERC20TokenDynamicMultisigTest is Test {
         address newSigner = makeAddr("newSigner");
         
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitReplaceSigner(nonSigner, newSigner);
     }
     
     function test_ReplaceSigner_RevertAlreadySigner() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitReplaceSigner(signer3, signer2);
     }
     
     function test_ReplaceSigner_RevertZeroAddress() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitReplaceSigner(signer3, address(0));
     }
     
@@ -394,13 +394,13 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     function test_AddSigner_RevertAlreadySigner() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitAddSigner(signer2);
     }
     
     function test_AddSigner_RevertZeroAddress() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitAddSigner(address(0));
     }
     
@@ -435,7 +435,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     function test_RemoveSigner_RevertNotSigner() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidSigner.selector);
+        vm.expectRevert(ERC20Token.InvalidSigner.selector);
         token.submitRemoveSigner(nonSigner);
     }
     
@@ -468,7 +468,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     // Now try to remove the last signer - this should fail
     vm.prank(signer1);
-    vm.expectRevert(ERC20TokenDynamicMultisig.CannotRemoveLastSigner.selector);
+    vm.expectRevert(ERC20Token.CannotRemoveLastSigner.selector);
     token.submitRemoveSigner(signer1);
 }
     
@@ -488,7 +488,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
         
         // Now try to remove a signer (would leave 3 signers but need 4 confirmations)
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.ThresholdTooHigh.selector);
+        vm.expectRevert(ERC20Token.ThresholdTooHigh.selector);
         token.submitRemoveSigner(signer3);
     }
     
@@ -513,11 +513,11 @@ contract ERC20TokenDynamicMultisigTest is Test {
     
     function test_UpdateThreshold_RevertInvalidThreshold() public {
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidThreshold.selector);
+        vm.expectRevert(ERC20Token.InvalidThreshold.selector);
         token.submitUpdateThreshold(0);
         
         vm.prank(signer1);
-        vm.expectRevert(ERC20TokenDynamicMultisig.InvalidThreshold.selector);
+        vm.expectRevert(ERC20Token.InvalidThreshold.selector);
         token.submitUpdateThreshold(4); // More than current signers
     }
     
@@ -542,7 +542,7 @@ contract ERC20TokenDynamicMultisigTest is Test {
         uint256 txId = token.submitMint(recipient, 1000 * 10**18);
         
         vm.prank(nonSigner);
-        vm.expectRevert(ERC20TokenDynamicMultisig.NotASigner.selector);
+        vm.expectRevert(ERC20Token.NotASigner.selector);
         token.confirmTransaction(txId);
     }
     

@@ -7,12 +7,12 @@ import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title ERC20TokenDynamicMultisig
+ * @title ERC20Token
  * @notice A multisig-controlled ERC20 token with dynamic signer management and advanced governance features
  * @dev Implements ERC20, ERC20Burnable, ERC20Pausable with multisig governance for all administrative functions
  * @author Smart Contract Developer
  */
-contract ERC20TokenDynamicMultisig is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
+contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
 
     /// @notice Token name storage
     string private _name;

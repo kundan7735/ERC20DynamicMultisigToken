@@ -217,11 +217,11 @@ forge verify-contract \
 ```
 .
 ├── src/
-│   └── ERC20TokenDynamicMultisig.sol    # Main contract
+│   └── ERC20Token.sol    # Main contract
 ├── script/
 │   └── DeployDynamicMultisigToken.s.sol # Deployment script
 ├── test/
-│   └── ERC20TokenDynamicMultisig.t.sol  # Unit tests
+│   └── ERC20Token.t.sol  # Unit tests
 ├── .env.example                   # Environment variables template
 ├── remappings.txt                 # remappings for lib 
 ├── foundry.toml                   # Foundry configuration

@@ -17,7 +17,7 @@ A gas-optimized, security-enhanced ERC20 token with dynamic multisig governance 
 
 ## 🎯 Overview
 
-The **ERC20TokenDynamicMultisig** is an advanced ERC20 token implementation that combines standard token functionality with sophisticated multisig governance. Unlike traditional multisig wallets, this contract embeds multisig control directly into administrative functions, providing enterprise-grade security for token management operations.
+The **ERC20Token** is an advanced ERC20 token implementation that combines standard token functionality with sophisticated multisig governance. Unlike traditional multisig wallets, this contract embeds multisig control directly into administrative functions, providing enterprise-grade security for token management operations.
 
 ### Core Concept
 
@@ -54,7 +54,7 @@ All administrative operations (minting, burning, pausing, signer management) req
 ### Core Components
 
 ```
-ERC20TokenDynamicMultisig
+ERC20Token
 ├── ERC20 (OpenZeppelin)
 ├── ERC20Burnable (OpenZeppelin)
 ├── ERC20Pausable (OpenZeppelin)
@@ -195,7 +195,7 @@ function isSigner(address account) external view returns (bool)
 address[] memory initialSigners = [0x123..., 0x456..., 0x789...];
 uint256 requiredConfirmations = 2;  // 2-of-3 multisig
 
-ERC20TokenDynamicMultisig token = new ERC20TokenDynamicMultisig(
+ERC20Token token = new ERC20Token(
     "My Multisig Token",
     "MMT", 
     initialSigners,
@@ -285,7 +285,7 @@ forge install
 pragma solidity ^0.8.27;
 
 import {Script} from "forge-std/Script.sol";
-import {ERC20TokenDynamicMultisig} from "../src/ERC20TokenDynamicMultisig.sol";
+import {ERC20Token} from "../src/ERC20Token.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -297,7 +297,7 @@ contract DeployScript is Script {
         signers[1] = 0x8ba1f109551bD432803012645Hf45621564f5A5fB;  // Signer 2  
         signers[2] = 0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed;  // Signer 3
 
-        ERC20TokenDynamicMultisig token = new ERC20TokenDynamicMultisig(
+        ERC20Token token = new ERC20Token(
             "Production Multisig Token",
             "PMT",
             signers,

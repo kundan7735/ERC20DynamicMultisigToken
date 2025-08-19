@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {ERC20TokenDynamicMultisig} from "../src/ERC20TokenDynamicMultisig.sol";
+import {ERC20Token} from "../src/ERC20Token.sol";
 
 contract DeployDynamicMultisigToken is Script {
     // Configuration struct for deployment
@@ -14,7 +14,7 @@ contract DeployDynamicMultisigToken is Script {
     }
 
     // Deployed contract address tracking
-    ERC20TokenDynamicMultisig public token;
+    ERC20Token public token;
 
     function run() external {
         // Determine which network we're deploying to
@@ -62,7 +62,7 @@ contract DeployDynamicMultisigToken is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy the contract
-        token = new ERC20TokenDynamicMultisig(
+        token = new ERC20Token(
             config.name,
             config.symbol,
             config.signers,
@@ -281,7 +281,7 @@ contract DeployDynamicMultisigToken is Script {
         
         console2.log("    ", config.requiredConfirmations, ") \\");
         console2.log("  ", address(token), " \\");
-        console2.log("  src/ERC20TokenDynamicMultisig.sol:ERC20TokenDynamicMultisig \\");
+        console2.log("  src/ERC20Token.sol:ERC20Token \\");
         console2.log("  --etherscan-api-key $ETHERSCAN_API_KEY");
         console2.log("=====================================");
     }
@@ -298,12 +298,12 @@ contract DeployDynamicMultisigToken is Script {
 
 // Separate script for interacting with deployed contract
 contract InteractWithDynamicMultisig is Script {
-    ERC20TokenDynamicMultisig public token;
+    ERC20Token public token;
     
     function run() external {
         // Load contract address from environment
         address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
-        token = ERC20TokenDynamicMultisig(tokenAddress);
+        token = ERC20Token(tokenAddress);
         
         uint256 signerPrivateKey = vm.envUint("PRIVATE_KEY");
         
@@ -337,11 +337,11 @@ contract InteractWithDynamicMultisig is Script {
 
 // Script for emergency operations
 contract EmergencyDynamicMultisig is Script {
-    ERC20TokenDynamicMultisig public token;
+    ERC20Token public token;
     
     function run() external {
         address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
-        token = ERC20TokenDynamicMultisig(tokenAddress);
+        token = ERC20Token(tokenAddress);
         
         uint256 signerPrivateKey = vm.envUint("EMERGENCY_SIGNER_KEY");
         
@@ -368,11 +368,11 @@ contract EmergencyDynamicMultisig is Script {
 
 // Script for batch operations
 contract BatchDynamicMultisigOperations is Script {
-    ERC20TokenDynamicMultisig public token;
+    ERC20Token public token;
     
     function run() external {
         address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
-        token = ERC20TokenDynamicMultisig(tokenAddress);
+        token = ERC20Token(tokenAddress);
         
         uint256 signerPrivateKey = vm.envUint("BATCH_SIGNER_KEY");
         
