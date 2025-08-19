@@ -14,6 +14,7 @@ A secure ERC20 token implementation with m-out-of-n multisignature functionality
 
 The following functions require m/n multisig approval:
 - `mint()` - Create new tokens
+- `burn()` - Burn tokens
 - `pause()` - Pause all token transfers
 - `unpause()` - Resume token transfers
 - `updateNameAndSymbol()` - Change token metadata
@@ -36,7 +37,7 @@ cd <your-repo>
 
 2. Install dependencies:
 ```bash
-make install
+forge build
 # or manually:
 forge install OpenZeppelin/openzeppelin-contracts --no-commit
 forge install foundry-rs/forge-std --no-commit
