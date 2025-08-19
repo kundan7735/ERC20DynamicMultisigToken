@@ -25,8 +25,8 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Packed struct to save storage slots
      */
     struct MultisigConfig {
-        uint128 requiredConfirmations;  /// @dev Number of required confirmations for transaction execution
-        uint128 transactionCount;       /// @dev Total number of submitted transactions
+        uint256 requiredConfirmations;  /// @dev Number of required confirmations for transaction execution
+        uint256 transactionCount;       /// @dev Total number of submitted transactions
     }
     
     /// @notice Current multisig configuration
@@ -229,7 +229,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
         
         _name = name_;
         _symbol = symbol_;
-        config.requiredConfirmations = uint128(_requiredConfirmations);
+        config.requiredConfirmations = _requiredConfirmations;
         config.transactionCount = 0;
         
         // Initial mint: 10 billion tokens
@@ -364,7 +364,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
         uint256 txId = config.transactionCount;
         
         // Gas optimization: direct assignment instead of storage modification
-        config.transactionCount = uint128(txId + 1);
+        config.transactionCount = txId + 1;
         
         Transaction storage newTx = transactions[txId];
         newTx.txType = _txType;
@@ -565,7 +565,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      */
     function _updateThreshold(uint256 newThreshold) private {
         uint256 oldThreshold = config.requiredConfirmations;
-        config.requiredConfirmations = uint128(newThreshold);
+        config.requiredConfirmations = newThreshold;
         emit ThresholdUpdated(oldThreshold, newThreshold);
     }
 
