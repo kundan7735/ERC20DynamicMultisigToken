@@ -13,10 +13,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  * @author Smart Contract Developer
  */
 contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
-
     /// @notice Token name storage
     string private _name;
-    
+
     /// @notice Token symbol storage
     string private _symbol;
 
@@ -25,25 +24,26 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Packed struct to save storage slots
      */
     struct MultisigConfig {
-        uint256 requiredConfirmations;  /// @dev Number of required confirmations for transaction execution
-        uint256 transactionCount;       /// @dev Total number of submitted transactions
+        uint256 requiredConfirmations; /// @dev Number of required confirmations for transaction execution
+        uint256 transactionCount; /// @dev Total number of submitted transactions
     }
-    
+
     /// @notice Current multisig configuration
     MultisigConfig public config;
-    
+
     /// @notice Array of current signers
     address[] public signers;
-    
+
     /// @notice Mapping to check if address is a signer
     mapping(address => bool) public isSigner;
-    
+
     /// @notice Mapping of transaction ID to signer to confirmation status
-    mapping(uint256 => mapping(address => bool)) private transactionConfirmations;
-    
+    mapping(uint256 => mapping(address => bool))
+        private transactionConfirmations;
+
     /// @notice Mapping to track pending transactions
     mapping(uint256 => bool) public isPending;
-    
+
     /// @notice Array of pending transaction IDs for efficient retrieval
     uint256[] private pendingTransactionIds;
 
@@ -51,16 +51,16 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @notice Enumeration of possible transaction types
      * @dev Used to identify the type of multisig transaction
      */
-    enum TransactionType { 
-        PAUSE,              /// @dev Pause token transfers
-        UNPAUSE,            /// @dev Unpause token transfers
+    enum TransactionType {
+        PAUSE, /// @dev Pause token transfers
+        UNPAUSE, /// @dev Unpause token transfers
         UPDATE_NAME_SYMBOL, /// @dev Update token name and symbol
-        MINT,               /// @dev Mint new tokens
-        BURN,               /// @dev Burn existing tokens
-        REPLACE_SIGNER,     /// @dev Replace an existing signer
-        ADD_SIGNER,         /// @dev Add a new signer
-        REMOVE_SIGNER,      /// @dev Remove an existing signer
-        UPDATE_THRESHOLD    /// @dev Update confirmation threshold
+        MINT, /// @dev Mint new tokens
+        BURN, /// @dev Burn existing tokens
+        REPLACE_SIGNER, /// @dev Replace an existing signer
+        ADD_SIGNER, /// @dev Add a new signer
+        REMOVE_SIGNER, /// @dev Remove an existing signer
+        UPDATE_THRESHOLD /// @dev Update confirmation threshold
     }
 
     /**
@@ -68,14 +68,14 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Optimized struct packing for gas efficiency
      */
     struct Transaction {
-        TransactionType txType;     /// @dev Type of transaction (1 byte)
-        bool executed;              /// @dev Whether transaction has been executed (1 byte)
-        uint16 confirmations;       /// @dev Number of confirmations received (2 bytes)
-        uint32 timestamp;           /// @dev Transaction submission timestamp (4 bytes)
-        address target;             /// @dev Target address for transaction (20 bytes)
-        uint256 amount;             /// @dev Amount involved in transaction (32 bytes)
-        string data1;               /// @dev First data field (dynamic)
-        string data2;               /// @dev Second data field (dynamic)
+        TransactionType txType; /// @dev Type of transaction (1 byte)
+        uint256 confirmations; /// @dev Number of confirmations received
+        uint256 amount; /// @dev Amount involved in transaction
+        uint256 timestamp; /// @dev Transaction submission timestamp
+        address target; /// @dev Target address for transaction
+        string data1; /// @dev First data field (dynamic)
+        string data2; /// @dev Second data field (dynamic)
+        bool executed; /// @dev Whether transaction has been executed
     }
 
     /// @notice Mapping of transaction ID to transaction data
@@ -88,54 +88,58 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param txType The type of transaction
      * @param submitter The address that submitted the transaction
      */
-    event TransactionSubmitted(uint256 indexed txId, TransactionType txType, address indexed submitter);
-    
+    event TransactionSubmitted(
+        uint256 indexed txId,
+        TransactionType txType,
+        address indexed submitter
+    );
+
     /**
      * @notice Emitted when a transaction is confirmed by a signer
      * @param txId The transaction ID
      * @param signer The address that confirmed the transaction
      */
     event TransactionConfirmed(uint256 indexed txId, address indexed signer);
-    
+
     /**
      * @notice Emitted when a confirmation is revoked
      * @param txId The transaction ID
      * @param signer The address that revoked confirmation
      */
     event TransactionRevoked(uint256 indexed txId, address indexed signer);
-    
+
     /**
      * @notice Emitted when a transaction is executed
      * @param txId The transaction ID
      */
     event TransactionExecuted(uint256 indexed txId);
-    
+
     /**
      * @notice Emitted when a signer is replaced
      * @param oldSigner The address of the old signer
      * @param newSigner The address of the new signer
      */
     event SignerReplaced(address indexed oldSigner, address indexed newSigner);
-    
+
     /**
      * @notice Emitted when a new signer is added
      * @param newSigner The address of the new signer
      */
     event SignerAdded(address indexed newSigner);
-    
+
     /**
      * @notice Emitted when a signer is removed
      * @param removedSigner The address of the removed signer
      */
     event SignerRemoved(address indexed removedSigner);
-    
+
     /**
      * @notice Emitted when the confirmation threshold is updated
      * @param oldThreshold The previous threshold
      * @param newThreshold The new threshold
      */
     event ThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
-    
+
     /**
      * @notice Emitted when tokens are burned through multisig
      * @param from The address tokens were burned from
@@ -193,7 +197,8 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param _txId The transaction ID to check
      */
     modifier notConfirmed(uint256 _txId) {
-        if (transactionConfirmations[_txId][msg.sender]) revert TransactionAlreadyConfirmed();
+        if (transactionConfirmations[_txId][msg.sender])
+            revert TransactionAlreadyConfirmed();
         _;
     }
 
@@ -206,32 +211,35 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param _requiredConfirmations Number of required confirmations for transaction execution
      */
     constructor(
-        string memory name_, 
+        string memory name_,
         string memory symbol_,
         address[] memory _signers,
         uint256 _requiredConfirmations
     ) ERC20(name_, symbol_) {
         uint256 signersLength = _signers.length;
         if (signersLength == 0) revert InvalidSigner();
-        if (_requiredConfirmations == 0 || _requiredConfirmations > signersLength) revert InvalidThreshold();
-        
+        if (
+            _requiredConfirmations == 0 ||
+            _requiredConfirmations > signersLength
+        ) revert InvalidThreshold();
+
         // Gas optimization: cache array length and use unchecked arithmetic where safe
         unchecked {
             for (uint256 i = 0; i < signersLength; ++i) {
                 address signer = _signers[i];
                 if (signer == address(0)) revert InvalidSigner();
                 if (isSigner[signer]) revert DuplicateSigner();
-                
+
                 signers.push(signer);
                 isSigner[signer] = true;
             }
         }
-        
+
         _name = name_;
         _symbol = symbol_;
         config.requiredConfirmations = _requiredConfirmations;
         config.transactionCount = 0;
-        
+
         // Initial mint: 10 billion tokens
         _mint(msg.sender, 10_000_000_000 * 10 ** decimals());
     }
@@ -251,7 +259,8 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @return txId The ID of the submitted transaction
      */
     function submitUnpause() external onlyMultisig returns (uint256) {
-        return _submitTransaction(TransactionType.UNPAUSE, address(0), 0, "", "");
+        return
+            _submitTransaction(TransactionType.UNPAUSE, address(0), 0, "", "");
     }
 
     /**
@@ -261,12 +270,18 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param newSymbol The new token symbol
      * @return txId The ID of the submitted transaction
      */
-    function submitUpdateNameAndSymbol(string calldata newName, string calldata newSymbol) 
-        external 
-        onlyMultisig 
-        returns (uint256) 
-    {
-        return _submitTransaction(TransactionType.UPDATE_NAME_SYMBOL, address(0), 0, newName, newSymbol);
+    function submitUpdateNameAndSymbol(
+        string calldata newName,
+        string calldata newSymbol
+    ) external onlyMultisig returns (uint256) {
+        return
+            _submitTransaction(
+                TransactionType.UPDATE_NAME_SYMBOL,
+                address(0),
+                0,
+                newName,
+                newSymbol
+            );
     }
 
     /**
@@ -276,7 +291,10 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param amount The amount of tokens to mint
      * @return txId The ID of the submitted transaction
      */
-    function submitMint(address to, uint256 amount) external onlyMultisig returns (uint256) {
+    function submitMint(
+        address to,
+        uint256 amount
+    ) external onlyMultisig returns (uint256) {
         if (to == address(0)) revert InvalidRecipient();
         return _submitTransaction(TransactionType.MINT, to, amount, "", "");
     }
@@ -288,7 +306,10 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param amount The amount of tokens to burn
      * @return txId The ID of the submitted transaction
      */
-    function submitBurn(address from, uint256 amount) external onlyMultisig returns (uint256) {
+    function submitBurn(
+        address from,
+        uint256 amount
+    ) external onlyMultisig returns (uint256) {
         if (from == address(0)) revert InvalidRecipient();
         if (amount == 0) revert InvalidBurnAmount();
         if (balanceOf(from) < amount) revert InvalidBurnAmount();
@@ -302,10 +323,21 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param newSigner The address of the new signer
      * @return txId The ID of the submitted transaction
      */
-    function submitReplaceSigner(address oldSigner, address newSigner) external onlyMultisig returns (uint256) {
+    function submitReplaceSigner(
+        address oldSigner,
+        address newSigner
+    ) external onlyMultisig returns (uint256) {
         if (!isSigner[oldSigner]) revert InvalidSigner();
-        if (isSigner[newSigner] || newSigner == address(0)) revert InvalidSigner();
-        return _submitTransaction(TransactionType.REPLACE_SIGNER, oldSigner, uint256(uint160(newSigner)), "", "");
+        if (isSigner[newSigner] || newSigner == address(0))
+            revert InvalidSigner();
+        return
+            _submitTransaction(
+                TransactionType.REPLACE_SIGNER,
+                oldSigner,
+                uint256(uint160(newSigner)),
+                "",
+                ""
+            );
     }
 
     /**
@@ -314,9 +346,19 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param newSigner The address of the new signer to add
      * @return txId The ID of the submitted transaction
      */
-    function submitAddSigner(address newSigner) external onlyMultisig returns (uint256) {
-        if (isSigner[newSigner] || newSigner == address(0)) revert InvalidSigner();
-        return _submitTransaction(TransactionType.ADD_SIGNER, newSigner, 0, "", "");
+    function submitAddSigner(
+        address newSigner
+    ) external onlyMultisig returns (uint256) {
+        if (isSigner[newSigner] || newSigner == address(0))
+            revert InvalidSigner();
+        return
+            _submitTransaction(
+                TransactionType.ADD_SIGNER,
+                newSigner,
+                0,
+                "",
+                ""
+            );
     }
 
     /**
@@ -325,12 +367,22 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param signerToRemove The address of the signer to remove
      * @return txId The ID of the submitted transaction
      */
-    function submitRemoveSigner(address signerToRemove) external onlyMultisig returns (uint256) {
+    function submitRemoveSigner(
+        address signerToRemove
+    ) external onlyMultisig returns (uint256) {
         if (!isSigner[signerToRemove]) revert InvalidSigner();
         uint256 signersLength = signers.length;
         if (signersLength <= 1) revert CannotRemoveLastSigner();
-        if (signersLength - 1 < config.requiredConfirmations) revert ThresholdTooHigh();
-        return _submitTransaction(TransactionType.REMOVE_SIGNER, signerToRemove, 0, "", "");
+        if (signersLength - 1 < config.requiredConfirmations)
+            revert ThresholdTooHigh();
+        return
+            _submitTransaction(
+                TransactionType.REMOVE_SIGNER,
+                signerToRemove,
+                0,
+                "",
+                ""
+            );
     }
 
     /**
@@ -339,9 +391,19 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param newThreshold The new confirmation threshold
      * @return txId The ID of the submitted transaction
      */
-    function submitUpdateThreshold(uint256 newThreshold) external onlyMultisig returns (uint256) {
-        if (newThreshold == 0 || newThreshold > signers.length) revert InvalidThreshold();
-        return _submitTransaction(TransactionType.UPDATE_THRESHOLD, address(0), newThreshold, "", "");
+    function submitUpdateThreshold(
+        uint256 newThreshold
+    ) external onlyMultisig returns (uint256) {
+        if (newThreshold == 0 || newThreshold > signers.length)
+            revert InvalidThreshold();
+        return
+            _submitTransaction(
+                TransactionType.UPDATE_THRESHOLD,
+                address(0),
+                newThreshold,
+                "",
+                ""
+            );
     }
 
     /**
@@ -362,10 +424,10 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
         string memory _data2
     ) private returns (uint256) {
         uint256 txId = config.transactionCount;
-        
+
         // Gas optimization: direct assignment instead of storage modification
         config.transactionCount = txId + 1;
-        
+
         Transaction storage newTx = transactions[txId];
         newTx.txType = _txType;
         newTx.target = _target;
@@ -374,17 +436,17 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
         newTx.data2 = _data2;
         newTx.executed = false;
         newTx.confirmations = 0;
-        newTx.timestamp = uint32(block.timestamp);
+        newTx.timestamp = block.timestamp;
 
         // Add to pending transactions
         isPending[txId] = true;
         pendingTransactionIds.push(txId);
 
         emit TransactionSubmitted(txId, _txType, msg.sender);
-        
+
         // Auto-confirm for submitter
         _confirmTransaction(txId);
-        
+
         return txId;
     }
 
@@ -393,12 +455,14 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Only callable by multisig signers. Auto-executes if threshold is reached
      * @param _txId The ID of the transaction to confirm
      */
-    function confirmTransaction(uint256 _txId) 
-        external 
-        onlyMultisig 
-        txExists(_txId) 
-        notExecuted(_txId) 
-        notConfirmed(_txId) 
+    function confirmTransaction(
+        uint256 _txId
+    )
+        external
+        onlyMultisig
+        txExists(_txId)
+        notExecuted(_txId)
+        notConfirmed(_txId)
         nonReentrant
     {
         _confirmTransaction(_txId);
@@ -411,14 +475,14 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      */
     function _confirmTransaction(uint256 _txId) private {
         transactionConfirmations[_txId][msg.sender] = true;
-        
+
         Transaction storage txn = transactions[_txId];
         unchecked {
             txn.confirmations++;
         }
-        
+
         emit TransactionConfirmed(_txId, msg.sender);
-        
+
         if (txn.confirmations >= config.requiredConfirmations) {
             _executeTransaction(_txId);
         }
@@ -429,22 +493,19 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Only callable by multisig signers who have previously confirmed
      * @param _txId The ID of the transaction to revoke confirmation for
      */
-    function revokeConfirmation(uint256 _txId) 
-        external 
-        onlyMultisig 
-        txExists(_txId) 
-        notExecuted(_txId) 
-        nonReentrant
-    {
-        if (!transactionConfirmations[_txId][msg.sender]) revert TransactionNotConfirmed();
-        
+    function revokeConfirmation(
+        uint256 _txId
+    ) external onlyMultisig txExists(_txId) notExecuted(_txId) nonReentrant {
+        if (!transactionConfirmations[_txId][msg.sender])
+            revert TransactionNotConfirmed();
+
         transactionConfirmations[_txId][msg.sender] = false;
-        
+
         Transaction storage txn = transactions[_txId];
         unchecked {
             txn.confirmations--;
         }
-        
+
         emit TransactionRevoked(_txId, msg.sender);
     }
 
@@ -453,14 +514,11 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @dev Only callable by multisig signers
      * @param _txId The ID of the transaction to execute
      */
-    function executeTransaction(uint256 _txId) 
-        external 
-        onlyMultisig 
-        txExists(_txId) 
-        notExecuted(_txId) 
-        nonReentrant
-    {
-        if (transactions[_txId].confirmations < config.requiredConfirmations) revert InsufficientConfirmations();
+    function executeTransaction(
+        uint256 _txId
+    ) external onlyMultisig txExists(_txId) notExecuted(_txId) nonReentrant {
+        if (transactions[_txId].confirmations < config.requiredConfirmations)
+            revert InsufficientConfirmations();
         _executeTransaction(_txId);
     }
 
@@ -472,12 +530,12 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
     function _executeTransaction(uint256 _txId) private {
         Transaction storage txn = transactions[_txId];
         txn.executed = true;
-        
+
         // Remove from pending transactions
         _removePendingTransaction(_txId);
-        
+
         TransactionType txType = txn.txType;
-        
+
         if (txType == TransactionType.PAUSE) {
             _pause();
         } else if (txType == TransactionType.UNPAUSE) {
@@ -499,7 +557,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
         } else if (txType == TransactionType.UPDATE_THRESHOLD) {
             _updateThreshold(txn.amount);
         }
-        
+
         emit TransactionExecuted(_txId);
     }
 
@@ -519,10 +577,10 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
                 }
             }
         }
-        
+
         isSigner[oldSigner] = false;
         isSigner[newSigner] = true;
-        
+
         emit SignerReplaced(oldSigner, newSigner);
     }
 
@@ -553,7 +611,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
                 }
             }
         }
-        
+
         isSigner[signerToRemove] = false;
         emit SignerRemoved(signerToRemove);
     }
@@ -576,14 +634,16 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      */
     function _removePendingTransaction(uint256 _txId) private {
         if (!isPending[_txId]) return;
-        
+
         isPending[_txId] = false;
-        
+
         uint256 length = pendingTransactionIds.length;
         unchecked {
             for (uint256 i = 0; i < length; ++i) {
                 if (pendingTransactionIds[i] == _txId) {
-                    pendingTransactionIds[i] = pendingTransactionIds[length - 1];
+                    pendingTransactionIds[i] = pendingTransactionIds[
+                        length - 1
+                    ];
                     pendingTransactionIds.pop();
                     break;
                 }
@@ -603,10 +663,12 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @return executed Whether transaction is executed
      * @return confirmations Number of confirmations received
      */
-    function getTransaction(uint256 _txId) 
-        external 
-        view 
-        txExists(_txId) 
+    function getTransaction(
+        uint256 _txId
+    )
+        external
+        view
+        txExists(_txId)
         returns (
             TransactionType txType,
             address target,
@@ -615,7 +677,7 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
             string memory data2,
             bool executed,
             uint256 confirmations
-        ) 
+        )
     {
         Transaction storage txn = transactions[_txId];
         return (
@@ -636,12 +698,10 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param _signer The signer address to check
      * @return confirmed True if signer has confirmed the transaction
      */
-    function isTransactionConfirmed(uint256 _txId, address _signer) 
-        external 
-        view 
-        txExists(_txId) 
-        returns (bool) 
-    {
+    function isTransactionConfirmed(
+        uint256 _txId,
+        address _signer
+    ) external view txExists(_txId) returns (bool) {
         return transactionConfirmations[_txId][_signer];
     }
 
@@ -678,7 +738,11 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @return required Number of required confirmations
      * @return total Total number of signers
      */
-    function getMultisigConfig() external view returns (uint256 required, uint256 total) {
+    function getMultisigConfig()
+        external
+        view
+        returns (uint256 required, uint256 total)
+    {
         return (config.requiredConfirmations, signers.length);
     }
 
@@ -734,10 +798,11 @@ contract ERC20Token is ERC20, ERC20Burnable, ERC20Pausable, ReentrancyGuard {
      * @param to The recipient address
      * @param value The amount being transferred
      */
-    function _update(address from, address to, uint256 value)
-        internal
-        override(ERC20, ERC20Pausable)
-    {
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
     }
 }
